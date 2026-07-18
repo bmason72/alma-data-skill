@@ -1,5 +1,8 @@
 # Mosaics, FIELD vs SOURCE, moving targets, and Total Power
 
+Reviewed 2026-07-18. Current-service statements below are dated because
+archive defects and offered observing modes can change.
+
 ## FIELD ≠ SOURCE ≠ "a source"
 
 - A proposal "source" can map to one or many telescope **pointings**. In a
@@ -20,6 +23,12 @@
   encodes the combined sensitivity pattern. Edge fields are shallower.
 - Pointing centers are in the MS FIELD table; the "phase center" of the
   mosaic product is a synthesis choice recorded in the image header.
+- Historical-copy trap: some old 7-m mosaic images made with CASA <5.1.1 and
+  Cycle-5-era 12-m/7-m mosaics made with CASA 5.1.1--5.3 had known imaging/PB
+  flux-distribution defects. Current archive copies were reimaged or held in
+  QA3, but a locally retained old package may still be affected. Read
+  `CASAVER`, the QA2 report, and the official issue notice before quantitative
+  reuse.
 
 ## Ephemeris / moving targets
 
@@ -47,9 +56,10 @@
   ≈ 58″ × (100 GHz/ν), i.e. ~1.13 λ/D — far larger than synthesized
   beams), and Jy/K flux scaling.
 - TP observes spectral-line modes; there is no TP continuum product stream.
-- Known archive defect: TP footprints (`s_region`) may represent a single
-  antenna pointing rather than the full mapped area — don't trust TP
-  spatial-coverage queries blindly.
+- Current Archive known issue (checked 2026-07-18): TP footprints (`s_region`)
+  may represent a single antenna pointing rather than the full mapped area.
+  Recheck the live archive-known-issues page before relying on TP spatial
+  coverage.
 
 ## Cross-array combination (12-m + 7-m + TP)
 

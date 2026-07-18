@@ -1,7 +1,8 @@
 # Plan: systematic documentation review to further update `working-with-alma-data`
 
-Status: PLAN ONLY (not yet executed). Drafted 2026-07-18; revised same day
-after external (codex gpt-5.6-sol) critique.
+Status: EXECUTED 2026-07-18. Drafted and revised the same day before the
+review; the source ledgers, domain findings, claims register, release history,
+and empirical sample inventory under `review/` are the durable outputs.
 Scope: bring the skill up to date against current official ALMA
 documentation, and add a verified history of ALMA pipeline capabilities
 from Cycle 4 onward. The skill covers ALMA data as it exists in the
@@ -66,8 +67,9 @@ Fetch current versions and record title/version/date/URL/orientation
    add-on imaging products) documentation, relevant CASA task docs
    (importasdm, mstransform, listobs).
 
-Many are PDF-only: download and read page ranges; archive local copies
-with version stamps.
+Many are PDF-only: download once into a unique scratch directory, convert to
+text once, review the extracted text thereafter, record hashes/version stamps,
+and remove both PDF and text after the findings are captured.
 
 ## Phase 2 — Confirm / contradict / harvest
 
@@ -123,7 +125,30 @@ Commit `review/claims.tsv` (updated statuses + provenance) so the next
 review is a diff, not a restart. Stamp each touched reference file with
 review date + doc versions.
 
-## Sequencing
+## Execution result
+
+- Archive/identifier findings: `review/findings-archive.md` and
+  `review/sources-archive.md`.
+- QA/product/packaging findings: `review/findings-qa-packaging.md` and
+  `review/sources-qa-packaging.md`.
+- Pipeline findings and release matrix: `review/findings-pipeline.md`,
+  `review/sources-pipeline.md`, and `references/pipeline-history.md`.
+- Consolidated entry points: `review/sources.md` and `review/claims.tsv`.
+- Empirical cross-check: `review/sample-inventory.tsv` and
+  `review/findings-sample.md`. The minimum cycle-complete public sample was
+  eight PASS MOUSs (one for every public Cycle 4--11), not the initially
+  estimated five or six. No public Cycle 12 (`2025.1`) ObsCore records were
+  available on the review date. Three small SEMIPASS packages were retained
+  only as counterexamples during analysis.
+- All review and package scratch was size-checked, deleted by its exact unique
+  path, and verified absent after the durable inventories were written.
+
+The review did not attempt a statistically representative survey of array
+type, polarization, manual processing, TP, or diffgain. Package observations
+are therefore labeled as sampled release evidence, never cycle-wide
+invariants.
+
+## Original sequencing
 
 Phase 0 local-only; Phases 1–2 need web access; Phase 3 is the largest
 (fan out per release, synthesize once) and can run as its own session;

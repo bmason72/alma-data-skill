@@ -1,5 +1,21 @@
 # ALMA identifiers, deliverables, and file trees
 
+Reviewed 2026-07-18 against the official Archive/QA2 packaging guidance and
+Cycle 4--11 DataLink/package samples. A proposal cycle does not uniquely
+determine packaging: processing release, QA state, re-delivery generation, and
+the user's Request Handler selection all matter.
+
+## Contents
+
+- Project codes
+- UIDs
+- DataLink deliverables
+- Packaging eras
+- Nesting trap
+- Logical QA2 package
+- Nested archives
+- Weblog
+
 ## Project codes
 
 `<year>.<period>.<number>.<type>`, e.g. `2021.1.00123.S`, `2019.2.00052.S`,
@@ -15,14 +31,18 @@
 
 ## UID grammar and sanitization
 
-- `uid://A001/Xnnn/Xnnn` — project-structure entities (OUSs, SBs).
-- `uid://A002/Xnnn/Xnnn` — EBs/ASDMs. `Xnnn` segments are hex (`X1467`,
-  `Xe1baa0`). Recognition aid only — early-cycle/Science-Verification data
-  can deviate.
-- Sanitized (filesystem) form, used in every path and filename:
+- `uid://A001/Xnnn/Xnnn` for project-structure entities and
+  `uid://A002/Xnnn/Xnnn` for EBs/ASDMs are normal modern conventions, not
+  reliable entity types. A live Cycle 1 Member OUS is
+  `uid://A002/X5d7935/X11b`. Establish an EB from the `asdm_uid` column or
+  raw-ASDM role, and a MOUS from `member_ous_uid` or member-path context.
+  `Xnnn` segments are normally hex (`X1467`, `Xe1baa0`).
+- Sanitized (filesystem) form, conventionally used in entity-bearing archive
+  paths and filenames:
   `uid://A001/X1467/X291` ↔ `uid___A001_X1467_X291`
-  (`://` → `___`, `/` → `_`). Regex for EB stems (case-insensitive hex):
-  `uid___A002_X[0-9a-f]+_X[0-9a-f]+`.
+  (`://` → `___`, `/` → `_`). A regex such as
+  `uid___A002_X[0-9a-f]+_X[0-9a-f]+` recognizes a common stem but does not
+  prove it is an EB.
 - DataLink accepts both forms.
 
 ## What DataLink offers per MOUS
@@ -31,13 +51,17 @@
 downloadable files: expect file rows (`access_url` + `content_length`),
 service-descriptor rows (`service_def`, empty `access_url`), nested DataLink
 entries to recurse into, error rows, and documentation links — handle each
-explicitly. `semantics` values include `#this`, `#auxiliary`, and commonly
-`#package` for raw/external bundles. Typical deliverable files (current era):
+explicitly. An empty result can mean a valid proprietary MOUS has no links
+visible to the current authorization, while an invalid UID can return an
+explicit `#error`/`NotFoundFault`; distinguish both from a valid visible
+MOUS with files. `semantics` values include `#this`, `#auxiliary`, and both
+`#progenitor` and `#package` on raw/external bundles. Preserve all returned
+semantics and ALMA-local columns. Typical deliverable files (current era):
 
 | File | Contents |
 |---|---|
 | `<project>_<mous-uid>_001_of_00N.tar` | pipeline FITS products; may be split into N parts — you need all N |
-| `<project>_<mous-uid>_auxiliary.tar` | everything-but-images: scripts, caltables, weblog, QA reports, README. Small — fetch first. |
+| `<project>_<mous-uid>_auxiliary.tar` | supporting calibration/script/log/QA material for a processed delivery. Usually fetch first, but it can be large and a SEMIPASS/unprocessed MOUS can contain only QA reports plus bookkeeping. |
 | `member.<mous-uid>.README.txt` | delivery README |
 | `<project>_uid___A002_*.asdm.sdm.tar` (one per EB) | raw ASDM — only needed for MS restore / recalibration; large. Basenames are project-prefixed: glob `*uid___A002_*.asdm.sdm.tar`, not `uid___A002_*`. |
 
@@ -45,41 +69,71 @@ There is no clean machine-readable taxonomy of file kinds: classification
 rests on filename conventions (`weblog`, `README`, `auxiliary`, `asdm.sdm`,
 `aquareport`, `auxproducts`, `scriptForPI`, `cube`, `cont`, ...) plus
 DataLink `semantics`. Classify conservatively and keep the raw filename.
+Following a nested DataLink service can expose individual files without the
+original tar directory path. Retain category/path provenance; fetch the
+top-level auxiliary tar when reconstructing the delivery tree matters.
 
-## Packaging eras — check the cycle before assuming layout
+## Packaging eras — separate tar grouping from the logical tree
 
-- **Roughly Cycle 4/5 onward**: the current-style QA2 package described
-  below (official docs group Cycles 4–6 together; details still drift
-  per cycle).
-- **Earlier cycles**: materially different packaging; products mixed
-  together; manual-calibration scripts (`*.scriptForCalibration.py`) and
-  `scriptForImaging.py` instead of pipeline scripts. The pipeline became
-  official in late 2014 and phased in through Cycles 3–5 — but manual
-  reduction is dataset-dependent and still occurs in later cycles for
-  special modes.
-- **Cycle 0 and early Cycle 1**: legacy packages; may include ready-to-use
-  calibrated MSs directly.
+- **Unpacked roles:** `product/`, `calibration/`, `qa/`, `script/`, `log/`
+  and README form the logical full-delivery model across the modern QA2 era,
+  with file-level drift. A partial request can omit unselected roles.
+- **Historical delivery grouping:** Cycles 1--4 processed products were
+  *mostly* kept in the same numbered tar. Cycle 5+ normally separates FITS
+  product tar part(s), an auxiliary tar, and README.
+- **Current retrieval grouping:** live DataLink can repackage old holdings
+  into current product/auxiliary/README/raw containers. Inspect actual rows;
+  a project cycle does not determine the containers downloadable today.
+- **Reduction style:** manual-calibration scripts
+  (`*.scriptForCalibration.py`) and `scriptForImaging.py` are common in older
+  data, but pipeline versus manual is dataset- and mode-dependent, not a cycle
+  switch. PPR presence is positive pipeline evidence; PPR absence is
+  conclusive only when `script/` was actually retrieved.
+- **Cycle 0 and early Cycle 1**: Cycle 0 calibrated MSs remain a documented
+  archive delivery case. Some original early-Cycle-1 PI deliveries also
+  included calibrated MSs, but those MSs are not retrievable from the current
+  archive; restore from the available package/raw data instead.
+
+For Cycles 2--4 also check `collection='ari_l'` / externally delivered
+products. ARI-L reprocessed many pipeline-compatible MOUSs to add more uniform
+cubes and continuum images. These are not the original QA2 delivery: do not
+use them to infer original-cycle filenames, pipeline version, or QA2 package
+completeness.
 
 ## The nesting trap
 
-Every tarball internally repeats the ASA tree, with or without the project
-code as top level:
+Top-level delivery tarballs commonly share the ASA tree, with or without the
+project code as top level:
 
 ```
 [2021.1.00123.S/]science_goal.uid___A001_.../group.uid___A001_.../member.uid___A001_.../...
 ```
 
-Unpacking several tarballs "in place" inside an already ASA-shaped tree
-without stripping this prefix produces nested duplicate trees
+Inspect member names before stripping anything. When this prefix is present,
+unpacking several tarballs "in place" inside an already ASA-shaped tree can
+produce nested duplicate trees
 (`member.../2021.1.00123.S/science_goal.../...`). Either unpack from the tree
 root or detect and strip the redundant prefix.
+
+Nested `auxproducts`, `caltables`, `flagversions`, and weblog archives have
+local payloads and do not generally repeat the full ASA tree. Individual
+nested DataLink downloads may also flatten their original path context.
+
+Top-level tar member mtimes can be **repackaging** times, not observation,
+processing, or QA2 dates. Sampled Cycle 5--9 auxiliary tars visible in 2026
+all carried a 2025-07-01 mtime despite much older PPR/weblog runs. Use archive
+metadata plus QA2/manifest/PPR/weblog provenance instead.
 
 Note: the Science Goal OUS UID is NOT available from ObsCore — the delivery
 path (`science_goal.uid___*`) is where you learn it.
 
-## The current-style QA2 package
+Use the non-lossy hierarchy Science Goal → one or more GOUSs → one or more
+MOUSs. A MOUS normally maps to one Scheduling Block, with commissioning and
+legacy exceptions; do not force a one-to-one hierarchy when ingesting data.
 
-Five directories + README under `member.uid___*/`:
+## The logical Cycle-5+ full QA2 package
+
+Five role directories + README under `member.uid___*/`:
 
 ```
 member.uid___A001_X1467_X291/
@@ -110,7 +164,9 @@ templates sat loose in `calibration/` before moving into `auxproducts.tgz`;
 `auxproducts.tgz` itself has appeared under `product/` in some eras;
 `applycalQA_outliers.txt` lives inside the weblog hierarchy). Directory
 roles are strong conventions, not guarantees — search by filename pattern,
-not fixed path.
+not fixed path. More importantly, distinguish **not downloaded** from **not
+produced**: absence in a partial request is not pipeline or QA evidence. Keep
+the DataLink/request inventory.
 
 ## Nested second-level archives
 
@@ -123,28 +179,33 @@ Unpack deliberately:
   decisions less conveniently). Also flag templates, flux/antenna-position
   tables, self-cal restore metadata.
 
-  `cont.dat` grammar: `Field: <name>` blocks holding
-  `SpectralWindow: <id> <name>` sub-blocks, each with an optional
-  `Flags: ALLCONT|LOWBANDWIDTH|LOWSPREAD` line and one or more
-  `<lo>~<hi>GHz LSRK` range lines. The **frequency ranges are the
-  authoritative content**; the flags are findcont diagnostic labels:
-  `ALLCONT` = all usable bandwidth accepted as continuum (by far the
-  common case; ranges may still trim SPW edges), `LOW*` = warnings that
-  the selection is narrow or poorly spread. No Flags line just means an
-  explicit partial selection was recorded. `cont.dat` can be absent for a
-  MOUS, and its SPW IDs can fail to match a given listobs/MS view — join
-  defensively.
+  `cont.dat` is release-versioned. Older sampled files have
+  `SpectralWindow: <id>` plus an optional bare `ALL`; PL2024 adds SPW names
+  and `Flags: ALLCONT|LOWBANDWIDTH|LOWSPREAD`. Frequency ranges use
+  `<lo>~<hi>GHz LSRK`. Do not normalize three distinct states: **SPW omitted**,
+  **SPW listed with no ranges**, and **SPW listed with ranges**. In PL2024
+  semantics omission allows `hif_findcont` to run, while a present-but-empty
+  entry suppresses the heuristic and can be treated downstream as
+  all-continuum. Newer pipelines can read the older format, not necessarily
+  vice versa; use the matching Pipeline User's Guide before replaying or
+  editing it. SPW IDs can also fail to match a particular MS/listobs view, so
+  join defensively by spectral setup.
 - `*.caltables.tgz` — calibration tables; needed for restore.
 - `*weblog*.tgz` — unpacks to `pipeline-YYYYMMDDTHHMMSS/html/`.
 - `*.flagversions.tgz` — per-EB saved flag states; primarily needed by the
   CASA restore (also useful for inspecting/reverting flag versions); many
   small files, so leave packed unless needed.
 
+Legacy bundles may use `.tar.gz` rather than `.tgz`; classify both. A
+pre-CASA-4.7 package restored under a newer task can fail solely because the
+task searches for the newer suffix.
+
 ## Weblog layout
 
 ```
 pipeline-YYYYMMDDTHHMMSS/html/
-├── index.html          ← landing page (older pipelines: t1-1.html)
+├── index.html          ← preferred landing page
+├── t1-1.html           ← compatible alternate; often coexists
 ├── t2-*.html           per-stage pages
 ├── stage<N>/           per-stage plots and QA detail
 └── session<name>/      per-session, per-MS metadata, incl.
@@ -153,8 +214,19 @@ pipeline-YYYYMMDDTHHMMSS/html/
 
 The landing page states the CASA and pipeline versions (needed for restore;
 `pipeline_manifest.xml` carries the same machine-readably). The weblog is
-the richest QA record: per-stage scores, flagging fractions, applycal
-outliers, per-EB/per-SPW diagnostics. The per-MS `listobs.txt` files (also
+the richest QA record: per-stage scores, flagging fractions, applycal-QA
+configuration/outlier evidence (inspect contents before claiming an outlier),
+and per-EB/per-SPW diagnostics. The per-MS `listobs.txt` files (also
 for `_targets.ms` / `_targets_line.ms` views) give scans, intents, SPWs,
 and antennas without CASA — see `references/listobs-and-intents.md`,
 including why session directories are named like `sessionsession_1`.
+
+Sampled Cycle 7--11 weblogs contain a byte-identical PPR copy under
+`html/PPR_<SBStatusUID>.xml`; the filename UID is the SB-status entity, not the
+MOUS, and this is not a second processing request. Search XML content and
+roles instead of classifying by UID-looking filename alone.
+
+Search rather than assuming role paths: the sampled Cycle 7
+`casa_commands.log` sits under `script/`, and nested DataLink can label a
+command log `#documentation`. Neither path nor semantics alone is a physical
+role contract.

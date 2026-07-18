@@ -1,5 +1,8 @@
 # ALMA cycle capabilities (as of Cycle 12, mid-2026)
 
+Reviewed 2026-07-18. This file is the observing-cycle projection; processing
+history is release-first in `pipeline-history.md`.
+
 Capabilities are **cycle-dependent** — every table here carries an "as of"
 label; verify against the current Proposer's Guide / Technical Handbook
 (almascience.org → Documents & Tools) for anything decision-critical.
@@ -61,8 +64,9 @@ tolerate out-of-band inputs, not assume every SPW maps to a science band.
 
 ## Correlator / spectral setup
 
-- Signal path: 2 sidebands → up to **4 basebands** (~2 GHz each) → each
-  baseband hosts SPWs.
+- Common 2SB-receiver signal path: 2 sidebands → up to **4 basebands**
+  (~2 GHz each) → each baseband hosts SPWs. SSB/DSB receivers differ; use
+  the matching-cycle Technical Handbook for receiver-specific interpretation.
 - **TDM** ("time division", continuum): nominal 2 GHz / 128 channels
   (dual-pol; 256 single-pol, 64 full-pol); current documentation quotes
   1.875 GHz usable. Older datasets and raw descriptions use the 2 GHz/128
@@ -76,26 +80,19 @@ tolerate out-of-band inputs, not assume every SPW maps to a science band.
   setups mix widths per baseband.
 - Polarization: default dual linear (`XX YY`); single-pol and full-pol
   (`XX XY YX YY`) modes exist — check `pol_states`.
-- The Wideband Sensitivity Upgrade (WSU) will overhaul bandwidths and the
-  correlator in coming cycles — treat all of the above as era-specific.
+- Treat all correlator numbers as era-specific; read the matching-cycle
+  Technical Handbook for decision-critical interpretation.
 
 ## Pipeline / CASA coupling
 
-Each delivery is tied to the CASA + pipeline version that produced it
-(stated in README and weblog landing page, and machine-readably in
-`pipeline_manifest.xml`). Restores use that version (`casa --pipeline`;
-some newer versions are officially blessed for restores — check the
-science-pipeline page's compatibility guidance). A project's cycle does
-**not** pin the pipeline version: processing follows the *operations
-pipeline at processing time*, so late processing, QA3, and re-deliveries
-put one cycle's projects under multiple releases (e.g. Cycle 11 MOUSs
-delivered under both PL2024.1/CASA 6.6.1 and PL2025.1/CASA 6.6.6), and
-auxiliary-product formats change across releases (per-MOUS
-`antennapos.csv` offsets → per-EB `antennapos.json` absolute positions at
-PL2024→PL2025). Read the versions per MOUS; never infer them from the
-proposal cycle. Pipeline capability milestones that affect what you
-find in a package: official pipeline from late 2014, phased in through
-Cycles 3–5 (manual reduction remains dataset-dependent in later cycles);
-pipeline imaging from ~Cycle 4, maturing through Cycles 5–9;
-**self-calibration in the pipeline from Cycle 10** (adds `selfcal` product
-variants); ARC/SRDP calibrated-MS services expanding from ~2023 onward.
+Each delivery is tied to the CASA + pipeline release that processed it, not to
+its proposal cycle. Read the QA2 report/README, weblog, or manifest per MOUS;
+late processing, QA3, and re-delivery put one cycle under multiple releases.
+The exact original version is the identical-reproduction baseline, while the
+current official compatibility table authorizes some newer restore versions.
+
+See `pipeline-history.md` for the dated operations matrix, official-source
+conflicts, patch traps, and the separate statuses **exists / in recipe /
+default / attempted / succeeded / delivered**. In particular, PL2023
+self-calibration attempts eligible targets; task/script/JSON presence is not
+proof that selfcal succeeded or was delivered.

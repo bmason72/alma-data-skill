@@ -1,5 +1,20 @@
 # ASDM and MeasurementSet semantics
 
+Reviewed 2026-07-18 against the current ALMA QA2-product/restore guidance,
+the official CASA `importasdm`/`split` contracts, and Cycle 4--11 package
+artifacts. Naming and column state are release-dependent; the table below is
+for restored interferometric data, not TP, solar, VLBI, or phased-array modes.
+
+## Contents
+
+- ASDM raw format
+- Extra SPWs
+- SPW identity
+- Directory-form datasets
+- DATA columns
+- Spectral frames
+- Size and time
+
 ## ASDM: the raw format
 
 - An ASDM (ALMA Science Data Model) is a **directory-form dataset**: XML
@@ -8,7 +23,9 @@
   (`uid://A002/...`).
 - Raw tarballs (project-prefixed basenames — glob
   `*uid___A002_*.asdm.sdm.tar`) unpack to that directory (named after the
-  UID). Not directly usable for science — convert with CASA `importasdm`.
+  UID, normally an A002 identifier). Identify it from the raw-ASDM role or
+  `asdm_uid`, not the prefix alone. It is not directly usable for science —
+  convert with CASA `importasdm`.
 - `importasdm` options matter scientifically: handling of online flags
   (`Flag.xml` — apply or import as FLAG_CMD), binary flags,
   auto- vs cross-correlation selection, WVR-corrected data streams,
@@ -54,13 +71,26 @@ silently misbehaves.
 - `split`/`mstransform` write the *selected* column into the output's
   `DATA` — a split-out "calibrated" MS has calibrated values in `DATA` and
   usually no `CORRECTED_DATA`.
-- Which state you have depends on restore history. Era-dependent naming:
-  older deliveries/restores produce `uid___*.ms.split.cal` (calibrated,
-  split to science SPWs); newer pipeline restores leave
-  `calibrated/uid___*.ms` with `CORRECTED_DATA` populated, or
-  `_targets.ms` (science-only split) / `_targets_line.ms`
-  (continuum-subtracted) views in the self-cal era. Check the columns and
-  the weblog/scripts; don't trust the suffix.
+- Which state you have depends on restore history. For the standard pipeline
+  interferometric views, use this as an orientation table, then inspect the
+  actual columns and scripts:
+
+| View | Era | `DATA` | `CORRECTED_DATA` |
+|---|---|---|---|
+| `uid*.ms` | all pipeline eras | raw | calibrated |
+| `uid*_target.ms` | pipeline imaging through PL2021 (sampled Cycles 5--8) | calibrated | continuum-subtracted |
+| `uid*_targets.ms` | Cycle 9 / PL2022 | calibrated | continuum-fit/subtracted result; may be absent |
+| `uid*_targets_line.ms` | Cycle 9 / PL2022 | calibrated + continuum-subtracted (copied from the preceding corrected column) | normally absent |
+| `uid*_targets.ms` | Cycle 10+ / PL2023+ | calibrated | successful selfcal result per eligible field; may be absent |
+| `uid*_targets_line.ms` | Cycle 10+ / PL2023+ | calibrated + continuum-subtracted | successful selfcal result per eligible field; may be absent |
+| `uid*.ms.split.cal` | manual reductions or `DOSPLIT=True` | calibrated | normally absent |
+
+  `casa_piperestorescript.py` restores the full `uid*.ms`; target/imaging
+  views require later imaging stages or the corresponding `scriptForPI`
+  options. These column semantics come from the producing CASA commands,
+  not `listobs.txt` (which does not inventory columns); verify with CASA table
+  tools or casacore. A service-supplied calibrated MS may have a different
+  output contract. Never choose a data column from the suffix alone.
 
 ## Spectral frames: Doppler setting, not tracking
 
@@ -72,8 +102,10 @@ silently misbehaves.
 - Pipeline image products are typically in **LSRK**; `cont.dat` frequency
   ranges are LSRK. Solar-system work uses topocentric/ephemeris frames
   (REST/SOURCE options).
-- Effective spectral resolution ≈ 2× channel spacing for Hanning-smoothed,
-  unaveraged data (archive `velocity_resolution` accounts for this).
+- Effective spectral resolution is about 2× channel spacing for
+  Hanning-smoothed, unaveraged data. Do not assume the ObsCore aggregate
+  `velocity_resolution` is a raw per-SPW channel description; use the MS/ASDM
+  correlator metadata for exact channelization.
 
 ## Practical size/time expectations
 

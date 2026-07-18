@@ -1,7 +1,20 @@
 # listobs files, scan intents, and SPW naming
 
+Reviewed 2026-07-18 against official pipeline guides and one QA2-PASS package
+from each public observing Cycle 4--11. Weblog paths are empirical conventions,
+not a stable archive schema.
+
+## Contents
+
+- MS views
+- Parsing listobs
+- Scan intents
+- SPW names
+- Array inference
+- Cross-EB checks
+
 `listobs` is CASA's text summary of a MeasurementSet — and you rarely need
-CASA to get one: recent pipeline weblogs (PL2024/PL2025 observed) ship a
+CASA to get one: all sampled pipeline weblogs from PL2018--PL2024 ship a
 pre-rendered `listobs.txt` for each MS the pipeline handled, at
 `pipeline-*/html/session<name>/<eb-uid>.ms/listobs.txt`. (Directory name =
 `session` + the session name, so `sessionsession_1` is normal, not a bug.
@@ -11,25 +24,31 @@ antennas for delivered data.
 
 ## One EB, several MS views — pick the right listobs
 
-A current-era *imaging*-recipe run (`hifa_calimage` family,
-targets.ms/self-cal workflow) carries up to three MSs per EB, each with
-its own listobs in the weblog. Calibration-only recipes and manual
-reductions do not produce the target views:
+A pipeline *imaging*-recipe run (`hifa_calimage` family) can carry several
+MS views per EB, each with its own listobs in the weblog. The names changed at
+PL2022/Cycle 9; calibration-only recipes and manual reductions do not produce
+these target views:
 
-| MS | Content |
-|---|---|
-| `<eb>.ms` | everything: calibrator + target scans; all SPWs incl. WVR/SQLD/CH_AVG |
-| `<eb>_targets.ms` | science targets only (post `hif_mstransform`); science SPWs only |
-| `<eb>_targets_line.ms` | continuum-subtracted variant; scan/SPW tables often identical to `_targets` |
+| MS | Era | Content |
+|---|---|---|
+| `<eb>.ms` | all pipeline eras | everything: calibrator + target scans; all SPWs incl. WVR/SQLD/CH_AVG |
+| `<eb>_target.ms` | pipeline imaging through PL2021 (sampled Cycles 5--8) | science-target view; calibrated `DATA`, continuum-subtracted `CORRECTED_DATA` |
+| `<eb>_targets.ms` | Cycle 9 / PL2022 | science targets after `hif_mstransform`; calibrated `DATA`, continuum-fit/subtracted `CORRECTED_DATA` when present |
+| `<eb>_targets_line.ms` | Cycle 9 / PL2022 | continuum-subtracted `DATA`, copied from the preceding view's corrected column |
+| `<eb>_targets.ms` | Cycle 10+ / PL2023+ | calibrated `DATA`, with successful selfcal in `CORRECTED_DATA` when present |
+| `<eb>_targets_line.ms` | Cycle 10+ / PL2023+ | continuum-subtracted `DATA`; successful selfcal result in `CORRECTED_DATA` when present |
 
-- Globbing "all listobs of a MOUS" triple-counts every EB and mixes
+- Globbing "all listobs of a MOUS" double- or triple-counts every EB and mixes
   incompatible SPW inventories. Choose one view per question: the full MS
-  for calibration/intent/time accounting, `_targets` for science-SPW
-  tabulation.
-- In observed PL2024/25 runs, SPW IDs stay consistent across the three
-  views of one EB (science windows keep their full-MS numbers) — treat
-  this as a convention to verify, not a guarantee: MS transformations may
-  renumber. Cross-EB consistency is a separate question (see below).
+  for calibration/intent/time accounting, singular `_target` or plural
+  `_targets` for science-SPW tabulation.
+- `listobs.txt` does not list MS columns. The column meanings above were
+  cross-checked against the sampled CASA-producing commands; verify the real
+  table with CASA `tb.colnames()` or casacore before selecting data.
+- In sampled PL2018--PL2024 runs, SPW IDs stayed consistent across the views
+  of one EB (science windows kept their full-MS numbers). Treat this as a
+  convention to verify, not a guarantee: MS transformations may renumber.
+  Cross-EB consistency is a separate question (see below).
 - **Split views retain stale parent metadata**: the `Sources:` table of a
   `_targets*` MS can still list calibrator sources and SPW IDs that do not
   exist in that MS's own SPW table. `Fields:` and `Spectral Windows:`
