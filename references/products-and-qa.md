@@ -32,8 +32,9 @@ e.g. member.uid___A001_X1467_X291.NGC_1333_sci.spw25_27_29_31.cont.I.tt0.pbcor.f
   anchored ends, preserve unknown tokens, and never use naive splitting.
 - `<intent>`: `_sci` science target, `_ph` phase cal, `_bp` bandpass, `_chk`
   check source; polarization-cal tokens are era-dependent (Cycle 12 uses
-  `pol_leak`, and also defines `amp`). Calibrator images ARE delivered —
-  don't mistake them for science targets.
+  `pol_leak`, and also defines `amp`). Calibrator images can be delivered —
+  do not assume every image is a science target or every calibrator family is
+  present.
 - `<specmode>`: `mfs` (per-SPW continuum), `cont` (aggregate continuum;
   multi-term products carry `.tt0`/`.tt1`), `cube`.
 - `<stokes>` is usually `I`. Full-polarization delivery is release/recipe
@@ -62,8 +63,10 @@ e.g. member.uid___A001_X1467_X291.NGC_1333_sci.spw25_27_29_31.cont.I.tt0.pbcor.f
 Delivered images are QA2-supporting, best-effort products. Imaging
 "mitigation" (data-volume limits) may reduce cube sizes, drop channels,
 targets, or SPWs. ADMIT products, where present, are added-value and not
-QA-assured. The calibrated visibilities always contain more than the
-delivered images — for complete or custom imaging, restore the MS.
+QA-assured. Calibrated visibilities may contain fields, SPWs, or channels not
+represented by the delivered images. Inspect the product/mitigation inventory
+and restore the MS when omitted content or custom imaging matters. See the
+[official delivered-products guidance](https://help.almascience.org/kb/articles/what-calibration-and-imaging-products-will-be-delivered-to-me).
 
 ## The QA ladder
 
@@ -195,24 +198,34 @@ options, in order of effort:
    provide calibrated-MS routes, but coverage and output state differ. NRAO
    SRDP's automated path covers much public pipeline-reduced Cycle 5+ 12-m/ACA
    data, excludes manual/TP data, and returns calibrators+targets without
-   selfcal or continuum subtraction. Check the current official service
-   contract before relying on coverage or retention.
+   selfcal or continuum subtraction. Check the
+   [current official calibrated-MS guidance](https://help.almascience.org/kb/articles/how-do-i-obtain-a-file-of-calibrated-visibilities-measurement-set-for-alma-data)
+   before relying on coverage or retention.
 2. **Restore locally with scriptForPI**:
-   - Download the auxiliary package + **raw** ASDM tarballs for the MOUS.
-     Numbered FITS product tars are science/reference products, not required
-     to reconstruct the calibrated MS unless the package's own script/README
-     explicitly says otherwise.
-   - Keep the ASA tree intact: `raw/` must sit beside `script/`,
+   - Download the auxiliary package plus the **raw** ASDMs required by the
+     package's restore script/manifest/PPR. Preserve the complete associated-
+     raw inventory separately; do not feed every archive-associated QA0
+     SEMIPASS/FAIL ASDM into a rerun. Numbered FITS product tars are
+     science/reference products, not required to reconstruct the calibrated MS
+     unless the package's own script/README explicitly says otherwise.
+   - Work in an isolated, release-compatible CASA environment on a staged MOUS
+     copy. Preserve the downloaded raw/package holdings. Keep the staged ASA
+     tree intact: `raw/` must sit beside `script/`,
      `calibration/`, `qa/` in the member directory (scriptForPI resolves
      relative paths).
    - Match the CASA + pipeline version stated in the QA2 report / README /
      weblog / manifest. The exact original is the identical-reproduction
-     baseline; ALMA's current compatibility table authorizes newer releases
-     for many restores. Do not infer the version from proposal cycle.
+     baseline; ALMA's
+     [current compatibility table](https://almascience.nrao.edu/processing/science-pipeline)
+     authorizes newer releases for many restores. Do not infer the version
+     from proposal cycle.
      Packages processed before 2017-10-01 may lack the manifest required by
      CASA 5.1.1+, and legacy `.tar.gz` versus `.tgz` names can independently
      break newer restore tasks.
-   - From `script/`: `casa --pipeline -c member.uid___*.scriptForPI.py`.
+   - Treat package Python as executable code: inspect it, verify that exactly
+     one `scriptForPI.py` belongs to the staged MOUS, then from that staged
+     `script/` directory run `casa --pipeline -c <exact-scriptForPI-path>` —
+     never select the script with a wildcard.
      Internally uses `casa_piperestorescript.py` (fast: importasdm + apply
      stored caltables + flagversions) or falls back to `casa_pipescript.py`
      (full pipeline re-run).

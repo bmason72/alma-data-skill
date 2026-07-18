@@ -2,6 +2,11 @@
 
 Review date: 2026-07-18
 
+Resolution note: this is a pre-edit empirical evidence ledger. Its edit-map
+language records recommendations that were subsequently applied or adjudicated
+in the current skill/references; do not reapply them mechanically. The package
+scratch was deleted after the reviewer handed off the inventory.
+
 This report is the empirical companion to the documentation review. It
 examines the scratch corpus at
 `<deleted-scratch>/sample` and the DataLink responses beside it. That
@@ -92,8 +97,9 @@ were not unpacked. JSON was parsed read-only with Node. Product FITS were not
 downloaded; their current file inventories came from
 `<deleted-scratch>/dl-product-cycle{4..11}.xml`.
 
-The scratch corpus was deliberately left untouched. Cleanup belongs to the
-root task that created it.
+The reviewer deliberately left the scratch corpus untouched at handoff. The
+root task later deleted the exact scratch directory after preserving this
+inventory.
 
 At handoff, `du -sb` reports exactly **2,942,565,213 bytes** under the
 `sample/` corpus and **2,949,046,063 bytes** for the complete scratch root
@@ -167,7 +173,7 @@ samples:
 
 Downloading auxiliary first was therefore the efficient empirical-review
 choice. Product FITS could be inventoried by recursing through DataLink without
-transferring 107 GB of product tars.
+transferring 106.256 GB (98.959 GiB), about 99 GiB, of product tars.
 
 ### Tar prefix and mtime
 
@@ -365,10 +371,11 @@ Key grammar observations:
 FITS headers were not inspected, so this review does not claim anything
 about WCS, BUNIT, beam keywords, or data axes for these specific products.
 
-## Concrete edits recommended for the skill
+## Historical edit recommendations
 
-These are edit targets for the root implementer; this subtask did not edit the
-skill/reference files.
+These were edit targets for the root implementer; this empirical-review subtask
+did not edit the skill/reference files. The current skill has since applied or
+adjudicated them, so use this section only as provenance.
 
 ### `SKILL.md`
 
@@ -594,7 +601,7 @@ sed -n '1,2p' <deleted-scratch>/candidates-2025.csv
 stat -c '%y %n' <deleted-scratch>/candidates-2025.csv
 ```
 
-### Confirm scratch size and that cleanup has not occurred
+### Historical pre-cleanup size/manifest check
 
 ```bash
 du -sb <deleted-scratch>/sample

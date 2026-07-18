@@ -14,6 +14,7 @@ below are date-stamped because the service evolves.
 - Download preflight
 - Derived quantities
 - ADQL patterns
+- Primary sources
 
 ## Endpoints
 
@@ -27,12 +28,16 @@ Services on each mirror:
 
 - **TAP**: `<mirror>/tap`, table `ivoa.obscore`. Use
   `pyvo.dal.TAPService("<mirror>/tap")` or `astroquery.alma`
-  (`Alma.query_tap(...)`); the raw sync endpoint is a POST to
-  `<mirror>/tap/sync` with `REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=...`.
+  (`Alma.query_tap(...)`). The raw `<mirror>/tap/sync` endpoint accepts GET
+  and POST with `REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=...`; prefer POST
+  for nontrivial queries and whenever a fresh, non-cached response matters.
 - **DataLink** (enumerate a MOUS's downloadable files):
-  `<mirror>/datalink/sync?ID=<uid>` — accepts `uid://A001/...` or sanitized
-  `uid___A001_...`.
-- **Direct file download**: `<mirror>/dataPortal/<filename>`.
+  `<mirror>/datalink/sync?ID=<uid>`. The EU service accepted canonical
+  `uid://A001/...` and sanitized `uid___A001_...` forms on 2026-07-18;
+  preserve the canonical URI internally and treat sanitized-ID retry as
+  service-specific compatibility behavior.
+- **Direct file download**: returned links commonly use `/dataPortal/...`.
+  Never construct or rewrite one; follow the returned `access_url`.
 - ObsCore `access_url` currently returns the observation's **DataLink URL**,
   not a direct file link — inspect `access_format` and follow the URL the
   service returned (or call DataLink yourself) to enumerate actual files.
@@ -82,12 +87,12 @@ The load-bearing ones and their traps:
 | `velocity_resolution` | m/s | aggregate archive estimate derived across SPWs, not a raw per-SPW channel width |
 | `spatial_resolution`, `s_resolution` | arcsec | estimate of synthesized beam |
 | `spatial_scale_max` | arcsec | Maximum Recoverable Scale — flux on scales approaching/exceeding this is progressively under-recovered (not a step cutoff) |
-| `antenna_arrays` | string | entries are `station:antenna` pairs, e.g. `A004:DV07 A025:CM03`; `DV`/`DA`, `CM`, and `PM` are useful 12-m/7-m/TP heuristics, not an identity contract. No dedicated "array" column exists. |
+| `antenna_arrays` | string | entries are `station:antenna` pairs, e.g. `A004:DV07 A025:CM03`; `DV`/`DA`, `CM`, and `PM` are useful 12-m/7-m/TP heuristics, not an identity contract. Heterogeneous EBs can contain both 7-m and 12-m antennas. No dedicated "array" column exists. |
 | `band_list` | string | live values checked in 2026 were numeric (`6`, multi-band `5 10`); historical/display forms can say `BAND 6`. Parse tolerantly and preserve `frequency_support` context. |
 | `qa2_passed` | `T`/`F` | boolean convenience; does NOT encode PASS/SEMIPASS/FAIL |
 | `data_rights` | `Public`/`Proprietary` | filter `= 'Public'` for anonymous access |
-| `obs_release_date` | ISO string | do not recompute access rights. Current policy: regular PASS/SEMIPASS data normally have 12 months from delivery; DDT has no period by default, with at most six months only when exceptionally requested and granted. `3000-01-01...` occurs as a proprietary placeholder, not a literal promise. Check `data_rights` and authorization. |
-| `access_estsize` | kbyte, nullable | coarse ObsCore estimate, not a file-download budget; DataLink `content_length` is per-link bytes |
+| `obs_release_date` | ISO string | do not recompute access rights. Under the [Cycle 13 Users' Policies](https://almascience.nrao.edu/documents-and-tools/cycle13/alma-user-policies), regular PASS/SEMIPASS data normally have 12 months from delivery; DDT has no period by default, with at most six months only when exceptionally requested and granted. `3000-01-01...` occurs as a proprietary placeholder, not a literal promise. Check `data_rights` and authorization. |
+| `access_estsize` | kbyte, nullable | coarse ObsCore estimate, not a file-download budget; DataLink `content_length` is per-link bytes and may also be null |
 | `science_observation` | `T`/`F` | `F` = calibration-intent rows |
 | `scan_intent` | string | `TARGET`, `BANDPASS`, `PHASE`, ... (multi-valued) |
 | `is_mosaic` | `T`/`F` | |
@@ -170,3 +175,14 @@ advertised ADQL 2.0, not 2.1, plus `POINT`, `CIRCLE`, `BOX`, `POLYGON`,
 `REGION`, `CONTAINS`, `INTERSECTS`, `AREA`, `CENTROID`, `COORDSYS`, `COORD1`,
 and `COORD2`. Inspect the selected mirror's `/tap/capabilities`; a newer IVOA
 standard is not proof that the deployed service implements it.
+
+## Primary sources
+
+- [ALMA Science Archive User Manual, Cycle 13](https://almascience.nrao.edu/documents-and-tools/cycle13/science-archive-manual)
+- [ALMA Archive notebooks](https://almascience.nrao.edu/alma-data/archive/archive-notebooks)
+- [IVOA TAP 1.1](https://www.ivoa.net/documents/TAP/20190927/REC-TAP-1.1.html),
+  [ObsCore 1.1](https://www.ivoa.net/documents/ObsCore/), and
+  [DataLink 1.1](https://www.ivoa.net/documents/DataLink/20231215/REC-DataLink-1.1.html)
+
+Live schema, capability, and DataLink observations above are empirical checks
+dated 2026-07-18, not IVOA or ALMA interface guarantees.

@@ -1,6 +1,6 @@
 ---
 name: working-with-alma-data
-description: Essential peculiarities of ALMA data for agents — OUS/MOUS/EB hierarchy and UID grammar, ALMA Science Archive (TAP/ObsCore) metadata quirks, deliverable packages and unpacked file trees, ASDM/MeasurementSet semantics, listobs parsing, scan intents, SPW naming, pipeline run artifacts, QA levels, product naming. Use when querying the ALMA archive, parsing ALMA metadata or listobs/pipeline files, or navigating/downloading/restoring ALMA data.
+description: "Work safely and accurately with ALMA archive and restored data: query TAP/ObsCore and DataLink; interpret OUS/MOUS/EB identifiers, packages, ASDMs, MeasurementSets, listobs, intents, SPWs, products, QA, pipeline artifacts, and release history; and branch for mosaics, moving targets, Total Power, polarization, band-to-band, or VLBI data. Use when Codex needs to discover, download, unpack, restore, parse, compare, or scientifically interpret ALMA data or metadata."
 ---
 
 # Working with ALMA data
@@ -32,13 +32,18 @@ Project (2021.1.00123.S)
 | Layer | What it is | What happens at this level |
 |---|---|---|
 | EB / ASDM | one telescope execution (~1 h) | raw data; QA0 |
-| MOUS | all EBs of one Scheduling Block, one array | calibration, pipeline run, QA2, archive delivery |
-| GOUS / Science Goal | sibling 12-m / 7-m / TP MOUSs of one goal | (data combination is a later science step) |
+| MOUS | EBs normally associated with one Scheduling Block and one independently calibrated setup | calibration, pipeline run, QA2, archive delivery |
+| GOUS | groups sibling MOUSs within a Science Goal | cross-array relationship; combination is a later science step |
+| Science Goal OUS | proposal science-goal structure above one or more GOUSs | preserves the proposal hierarchy |
 
-- **The MOUS is the atomic unit** of processing and delivery. 12-m, 7-m, and
-  Total Power observations of the same target are *separate sibling MOUSs*
-  normally grouped for combination (SB-name suffixes `_TM1`/`_TM2`, `_7M`,
-  `_TP`) — never three array types inside one MOUS.
+- **The MOUS is the atomic unit** of processing and delivery. For ordinary
+  non-solar observing, 12-m, 7-m, and Total Power data are normally separate
+  sibling MOUSs grouped for combination (SB-name suffixes `_TM1`/`_TM2`,
+  `_7M`, `_TP`). Do not make that an invariant: commissioning/legacy cases can
+  span more than one SB, and solar or exceptional heterogeneous interferometric
+  EBs can mix 7-m and 12-m antennas. TP remains a separate single-dish stream.
+  Determine actual composition from the EB/MS antenna table, not hierarchy or
+  suffix alone.
 - ObsCore's `asdm_uid` is the EB UID; an ASDM raw package represents an EB.
   Do not identify the entity solely from an A001/A002 prefix.
 
@@ -85,13 +90,19 @@ Project (2021.1.00123.S)
    Top-level delivery tarballs commonly repeat a shared ASA prefix
    (`[project/]science_goal.uid___*/group.uid___*/member.uid___*/...`), so
    strip it or unpack from the tree root when present. Nested archives have
-   local payloads and do not generally repeat the full prefix. Unpack
-   deliberately (`*.flagversions.tgz` mainly matters for restores).
+   local payloads and do not generally repeat the full prefix. Before
+   extraction, preflight selected DataLink bytes and free space; list every
+   member; reject absolute paths, `..` traversal, device nodes, and links that
+   escape the staging root. Extract into a unique empty staging directory,
+   never over an existing archive/user tree. Validate the resulting ASA tree
+   before promoting it, and retain the tar plus request inventory until then.
+   Unpack deliberately (`*.flagversions.tgz` mainly matters for restores).
    Directory/file absence in a partial Request Handler download is not
    processing evidence; retain the DataLink/request inventory.
-7. **Delivered FITS products are not the complete science content** —
-   imaging mitigation may drop targets/SPWs/channels. The calibrated
-   visibilities always contain more than the delivered images.
+7. **Delivered FITS products may not represent the complete science content** —
+   imaging mitigation can drop targets/SPWs/channels. Inspect the product
+   inventory; restore calibrated visibilities when omitted content or custom
+   imaging matters.
 8. **QA discipline**: `qa2_passed` (`T`/`F`) cannot reconstruct the
    three-state QA2 (PASS/SEMIPASS/FAIL) — read the README/QA2 report. Never
    infer QA0 status from file presence, final QA2 from AQUA pipeline scores,
@@ -123,8 +134,10 @@ log/          CASA/pipeline logs
 ```
 
 Placement of individual files varies by cycle — search by filename pattern,
-never by fixed path. Raw EB tarballs (`<project>_uid___A002_*.asdm.sdm.tar`)
-are separate per-EB downloads, not part of the package. Earlier cycles are
+never by fixed path. Raw EB tar basenames can be UID-only or project-prefixed;
+preserve the returned DataLink basename and match
+`*uid___A002_*.asdm.sdm.tar` rather than synthesizing it. They are separate
+per-EB downloads, not part of the package. Earlier cycles are
 packaged materially differently, and a SEMIPASS MOUS with no QA0-PASS EBs can
 have a QA-only auxiliary tar rather than a restore package. Current DataLink
 can also expose old/re-delivered data in newer tar groupings — see
@@ -136,11 +149,11 @@ caltables/flagversions, and QA instructions before calling it restorable.
 
 | Task touches... | Read |
 |---|---|
-| TAP/ADQL queries, ObsCore columns, footprints, release dates | `references/archive-query.md` |
-| project codes, UIDs, datalink deliverables, tarballs, unpacking, tree layout | `references/identifiers-and-packaging.md` |
-| raw data, importasdm, MS structure, SPWs, spectral frames | `references/asdm-and-ms.md` |
-| listobs parsing, scan intents, SPW names (FULL_RES/CH_AVG/SQLD/WVR), array inference | `references/listobs-and-intents.md` |
-| FITS products, naming, weblog, AQUA/PPR, QA levels, recipes, manifest/selfcal/stats files, MS restore | `references/products-and-qa.md` |
-| mosaics, FIELD vs SOURCE, moving targets, Total Power, array combination | `references/mosaics-ephemeris-and-tp.md` |
-| bands, arrays/configurations, correlator modes, cycle capabilities | `references/cycle-capabilities.md` |
-| pipeline/CASA operations dates, capability milestones, patch-specific package traps | `references/pipeline-history.md` |
+| TAP/ADQL queries, ObsCore columns, footprints, release dates | [archive-query.md](references/archive-query.md) |
+| project codes, UIDs, datalink deliverables, tarballs, unpacking, tree layout | [identifiers-and-packaging.md](references/identifiers-and-packaging.md) |
+| raw data, importasdm, MS structure, SPWs, spectral frames | [asdm-and-ms.md](references/asdm-and-ms.md) |
+| listobs parsing, scan intents, SPW names (FULL_RES/CH_AVG/SQLD/WVR), array inference | [listobs-and-intents.md](references/listobs-and-intents.md) |
+| FITS products, naming, weblog, AQUA/PPR, QA levels, recipes, manifest/selfcal/stats files, MS restore | [products-and-qa.md](references/products-and-qa.md) |
+| mosaics, FIELD vs SOURCE, moving targets, Total Power, array combination | [mosaics-ephemeris-and-tp.md](references/mosaics-ephemeris-and-tp.md) |
+| bands, arrays/configurations, correlator modes, cycle capabilities | [cycle-capabilities.md](references/cycle-capabilities.md) |
+| pipeline/CASA operations dates, capability milestones, patch-specific package traps | [pipeline-history.md](references/pipeline-history.md) |

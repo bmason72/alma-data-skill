@@ -1,5 +1,9 @@
 # Final adversarial audit
 
+Snapshot note: this file is the first-review post-edit audit. The subsequent
+review2 implementation made further corrections to the current skill and
+references; treat this file as historical provenance, not current readiness.
+
 Audit date: 2026-07-18 UTC  
 Snapshot: current `SKILL.md`, every `references/*.md`, `review/claims.tsv`,
 `review/sample-inventory.tsv`, all source ledgers, and the four domain/sample

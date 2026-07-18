@@ -41,9 +41,26 @@ archive defects and offered observing modes can change.
   (case/format variants!) and time window instead, and verify against the
   executed data.
 - ToO projects may have had placeholder coordinates at proposal time — trust
-  executed-data metadata, not proposal metadata.
+  executed-data metadata, not proposal metadata. See the official
+  [unspecified-coordinate guidance](https://help.almascience.org/kb/articles/how-do-i-deal-with-targets-with-unspecified-coordinates-in-the-ot).
 - Spectral work on moving targets uses source-rest-frame handling
   (ephemeris-aware frames), not LSRK.
+- Do not concatenate/relabel ephemeris EBs as though they shared a static phase
+  center. With the legacy `forcesingleephemfield` workflow, still image with
+  `phasecenter='TRACKFIELD'`; omitting it can corrupt even an image selecting
+  only the first EB. For source-rest cubes, follow the matching CASA
+  `SOURCE`/`specmode='cubesource'` workflow. See
+  [CASAdocs ephemeris guidance](https://casadocs.readthedocs.io/en/stable/notebooks/ephemeris_data.html).
+
+## Solar and heterogeneous interferometry
+
+- Ordinary non-solar 12-m and 7-m observations are normally separate sibling
+  MOUSs, but solar observations normally use a heterogeneous 7-m+12-m array,
+  and exceptional 7-m executions can include 12-m calibration antennas. Keep
+  a mixed antenna set mixed; classify from MS/listobs names and diameters, not
+  MOUS hierarchy or antenna count alone. TP remains a separate single-dish
+  stream. Verify the observing mode in the matching
+  [Technical Handbook](https://almascience.nrao.edu/proposing/documents-and-tools/latest/alma-technical-handbook).
 
 ## Total Power (TP)
 
@@ -56,18 +73,25 @@ archive defects and offered observing modes can change.
   ≈ 58″ × (100 GHz/ν), i.e. ~1.13 λ/D — far larger than synthesized
   beams), and Jy/K flux scaling.
 - TP observes spectral-line modes; there is no TP continuum product stream.
+- Historical local-copy trap: CASA versions before the 5.7/6.1 fix could make
+  `(t)sdimaging` reuse the wrong antenna position while combining multiple
+  TP MSs, corrupting image position, brightness distribution, and flux. Check
+  CASA version plus QA3/reprocessing state; affected holdings require corrected
+  reprocessing or the documented per-MS workaround in the
+  [official TP issue notice](https://help.almascience.org/kb/articles/i-heard-that-tp-images-generated-with-casa-5-7-6-1-are-affected-by-an-issue-with-the-task-t-sd).
 - Current Archive known issue (checked 2026-07-18): TP footprints (`s_region`)
   may represent a single antenna pointing rather than the full mapped area.
-  Recheck the live archive-known-issues page before relying on TP spatial
-  coverage.
+  Recheck the
+  [live archive-known-issues page](https://almascience.eso.org/alma-data/archive/archive-documentation)
+  before relying on TP spatial coverage.
 
 ## Cross-array combination (12-m + 7-m + TP)
 
-- Sibling MOUSs under one Group OUS are *intended* for combination, but the
-  archive delivers them separately, each with its own pipeline run, QA2, and
-  products. Combination (e.g. feathering TP with interferometric images,
-  joint deconvolution of 12-m+7-m) is a post-delivery science step — never
-  assume it has been done.
+- For ordinary non-solar programs, sibling MOUSs under one Group OUS are
+  *intended* for combination, but the archive delivers them separately, each
+  with its own pipeline run, QA2, and products. Combination (e.g. feathering
+  TP with interferometric images, joint deconvolution of 12-m+7-m) is a
+  post-delivery science step — never assume it has been done.
 - Check for siblings via `group_ous_uid` + `schedblock_name` suffixes
   (`_TM1`/`_TM2`, `_7M`, `_TP`). A 12-m-only image progressively loses flux
   on scales approaching and beyond the MRS (see `spatial_scale_max`) — that

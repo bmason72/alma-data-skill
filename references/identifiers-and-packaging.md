@@ -15,6 +15,7 @@ the user's Request Handler selection all matter.
 - Logical QA2 package
 - Nested archives
 - Weblog
+- Primary sources
 
 ## Project codes
 
@@ -43,15 +44,19 @@ the user's Request Handler selection all matter.
   (`://` → `___`, `/` → `_`). A regex such as
   `uid___A002_X[0-9a-f]+_X[0-9a-f]+` recognizes a common stem but does not
   prove it is an EB.
-- DataLink accepts both forms.
+- The EU DataLink service accepted both forms on 2026-07-18. Preserve the
+  canonical URI internally and treat sanitized-form retry as service-specific
+  compatibility behavior, not an IVOA contract.
 
 ## What DataLink offers per MOUS
 
 `<mirror>/datalink/sync?ID=<mous-uid>` returns a VOTable. Rows are NOT all
-downloadable files: expect file rows (`access_url` + `content_length`),
-service-descriptor rows (`service_def`, empty `access_url`), nested DataLink
-entries to recurse into, error rows, and documentation links — handle each
-explicitly. An empty result can mean a valid proprietary MOUS has no links
+downloadable files: exactly one of `access_url`, `service_def`, or
+`error_message` identifies the row's access alternative. `content_length`,
+when present, is per-link bytes and may be null. Expect direct file rows,
+service descriptors, nested DataLink entries to recurse into, error rows, and
+documentation links — handle each explicitly. An empty result can mean a
+valid proprietary MOUS has no links
 visible to the current authorization, while an invalid UID can return an
 explicit `#error`/`NotFoundFault`; distinguish both from a valid visible
 MOUS with files. `semantics` values include `#this`, `#auxiliary`, and both
@@ -63,7 +68,7 @@ semantics and ALMA-local columns. Typical deliverable files (current era):
 | `<project>_<mous-uid>_001_of_00N.tar` | pipeline FITS products; may be split into N parts — you need all N |
 | `<project>_<mous-uid>_auxiliary.tar` | supporting calibration/script/log/QA material for a processed delivery. Usually fetch first, but it can be large and a SEMIPASS/unprocessed MOUS can contain only QA reports plus bookkeeping. |
 | `member.<mous-uid>.README.txt` | delivery README |
-| `<project>_uid___A002_*.asdm.sdm.tar` (one per EB) | raw ASDM — only needed for MS restore / recalibration; large. Basenames are project-prefixed: glob `*uid___A002_*.asdm.sdm.tar`, not `uid___A002_*`. |
+| `*uid___A002_*.asdm.sdm.tar` (one per EB) | raw ASDM — only needed for MS restore / recalibration; large. Official guidance and current holdings show both UID-only and project-prefixed basenames. Preserve the DataLink basename; never synthesize it. |
 
 There is no clean machine-readable taxonomy of file kinds: classification
 rests on filename conventions (`weblog`, `README`, `auxiliary`, `asdm.sdm`,
@@ -94,11 +99,13 @@ top-level auxiliary tar when reconstructing the delivery tree matters.
   included calibrated MSs, but those MSs are not retrievable from the current
   archive; restore from the available package/raw data instead.
 
-For Cycles 2--4 also check `collection='ari_l'` / externally delivered
-products. ARI-L reprocessed many pipeline-compatible MOUSs to add more uniform
-cubes and continuum images. These are not the original QA2 delivery: do not
-use them to infer original-cycle filenames, pipeline version, or QA2 package
-completeness.
+For Cycles 2--4 also inspect the ASA UI **Collection** label `ari_l` and
+DataLink's externally delivered products. Do not write ADQL against a presumed
+`collection` column: the ObsCore field is `obs_collection`, and its live values
+must be introspected before filtering programmatically. ARI-L reprocessed many
+pipeline-compatible MOUSs to add more uniform cubes and continuum images.
+These are not the original QA2 delivery: do not use them to infer
+original-cycle filenames, pipeline version, or QA2 package completeness.
 
 ## The nesting trap
 
@@ -114,6 +121,16 @@ unpacking several tarballs "in place" inside an already ASA-shaped tree can
 produce nested duplicate trees
 (`member.../2021.1.00123.S/science_goal.../...`). Either unpack from the tree
 root or detect and strip the redundant prefix.
+
+Treat every downloaded archive as untrusted input. Preflight selected bytes
+and free space, list all members, and reject absolute paths, `..` traversal,
+device nodes, and symlink/hardlink targets that escape the extraction root.
+Extract into a unique empty staging directory rather than over an existing ASA
+or user tree. Validate the staged hierarchy before promotion and retain the
+archive plus request inventory until validation succeeds. When using Python,
+use an appropriate
+[tar extraction filter](https://docs.python.org/3/library/tarfile.html#extraction-filters)
+in addition to explicit member checks.
 
 Nested `auxproducts`, `caltables`, `flagversions`, and weblog archives have
 local payloads and do not generally repeat the full ASA tree. Individual
@@ -230,3 +247,15 @@ Search rather than assuming role paths: the sampled Cycle 7
 `casa_commands.log` sits under `script/`, and nested DataLink can label a
 command log `#documentation`. Neither path nor semantics alone is a physical
 role contract.
+
+## Primary sources
+
+- [ALMA Science Archive User Manual, Cycle 13](https://almascience.nrao.edu/documents-and-tools/cycle13/science-archive-manual)
+- [ALMA QA2 Data Products for Cycle 12](https://almascience.nrao.edu/documents-and-tools/cycle12/alma-qa2-data-products-for-cycle-12)
+- [How ALMA data products are packaged](https://help.almascience.org/kb/articles/how-are-alma-data-products-packaged)
+- [ARI-L project and retrieval guidance](https://almascience.eso.org/alma-data/aril)
+- [IVOA DataLink 1.1](https://www.ivoa.net/documents/DataLink/20231215/REC-DataLink-1.1.html)
+
+Package layouts, filenames, semantics, and tar mtimes described from the
+Cycle 4--11 corpus are empirical observations dated 2026-07-18, not archive
+schema guarantees.

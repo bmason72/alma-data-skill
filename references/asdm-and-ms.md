@@ -2,8 +2,10 @@
 
 Reviewed 2026-07-18 against the current ALMA QA2-product/restore guidance,
 the official CASA `importasdm`/`split` contracts, and Cycle 4--11 package
-artifacts. Naming and column state are release-dependent; the table below is
-for restored interferometric data, not TP, solar, VLBI, or phased-array modes.
+artifacts. Naming and column state are release-dependent. The orientation
+table below mixes restored full-MS outputs with observed imaging-run workspace
+views; it is not a universal restore contract and does not cover TP, solar,
+VLBI, or phased-array modes.
 
 ## Contents
 
@@ -21,11 +23,12 @@ for restored interferometric data, not TP, solar, VLBI, or phased-array modes.
   metadata tables (`ASDM.xml`, `Main.xml`, `Scan.xml`, `SpectralWindow.xml`,
   ...) plus binary payloads under `ASDMBinary/`. One ASDM = one EB
   (`uid://A002/...`).
-- Raw tarballs (project-prefixed basenames — glob
-  `*uid___A002_*.asdm.sdm.tar`) unpack to that directory (named after the
-  UID, normally an A002 identifier). Identify it from the raw-ASDM role or
-  `asdm_uid`, not the prefix alone. It is not directly usable for science —
-  convert with CASA `importasdm`.
+- Raw tar basenames may be UID-only or project-prefixed. Preserve the DataLink
+  basename, match broadly with `*uid___A002_*.asdm.sdm.tar`, and never
+  synthesize it. The tar unpacks to a directory named after the UID (normally
+  an A002 identifier). Identify it from the raw-ASDM role or `asdm_uid`, not
+  the prefix alone. It is not directly usable for science — convert with CASA
+  `importasdm`.
 - `importasdm` options matter scientifically: handling of online flags
   (`Flag.xml` — apply or import as FLAG_CMD), binary flags,
   auto- vs cross-correlation selection, WVR-corrected data streams,
@@ -79,17 +82,21 @@ silently misbehaves.
 |---|---|---|---|
 | `uid*.ms` | all pipeline eras | raw | calibrated |
 | `uid*_target.ms` | pipeline imaging through PL2021 (sampled Cycles 5--8) | calibrated | continuum-subtracted |
-| `uid*_targets.ms` | Cycle 9 / PL2022 | calibrated | continuum-fit/subtracted result; may be absent |
-| `uid*_targets_line.ms` | Cycle 9 / PL2022 | calibrated + continuum-subtracted (copied from the preceding corrected column) | normally absent |
+| `uid*_targets.ms` | observed PL2022 run workspace (Cycle 9 sample) | calibrated | transient continuum-fit/subtracted result; may be absent |
+| `uid*_targets_line.ms` | observed PL2022 run workspace (Cycle 9 sample) | calibrated + continuum-subtracted (copied from the preceding corrected column) | normally absent |
 | `uid*_targets.ms` | Cycle 10+ / PL2023+ | calibrated | successful selfcal result per eligible field; may be absent |
 | `uid*_targets_line.ms` | Cycle 10+ / PL2023+ | calibrated + continuum-subtracted | successful selfcal result per eligible field; may be absent |
 | `uid*.ms.split.cal` | manual reductions or `DOSPLIT=True` | calibrated | normally absent |
 
   `casa_piperestorescript.py` restores the full `uid*.ms`; target/imaging
   views require later imaging stages or the corresponding `scriptForPI`
-  options. These column semantics come from the producing CASA commands,
-  not `listobs.txt` (which does not inventory columns); verify with CASA table
-  tools or casacore. A service-supplied calibrated MS may have a different
+  options. The PL2022 rows above come from sampled producing commands. The
+  [current official MS-naming table](https://help.almascience.org/kb/articles/what-ms-naming-conventions-does-alma-follow)
+  instead groups final/restored Cycle-9+ `_targets*` views and describes
+  `CORRECTED_DATA` as successful selfcal (introduced in Cycle 10) or absent.
+  Preserve that source/artifact conflict: inspect the producing commands and
+  actual columns with CASA table tools or casacore. `listobs.txt` does not
+  inventory columns, and service-supplied calibrated MSs may have another
   output contract. Never choose a data column from the suffix alone.
 
 ## Spectral frames: Doppler setting, not tracking

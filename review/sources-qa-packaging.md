@@ -90,8 +90,8 @@ review.
   in the indexed copy. Retrospective workflow. URL:
   <https://help.almascience.org/kb/articles/interferometric-calibration-and-imaging-regeneration>
 - **S18 — MS naming and columns.** ALMA Knowledgebase, “What MS naming
-  conventions does ALMA follow?”, current article published 2025-12-15 and
-  updated in 2026. Retrospective, but rolling. It tabulates `uid*.ms`,
+  conventions does ALMA follow?”, last updated 2025-12-02 (page read
+  2026-07-18). Retrospective, but rolling. It tabulates `uid*.ms`,
   `target.ms`, `targets.ms`, `targets_line.ms`, `ms.split.cal`, and SD products.
   URL:
   <https://help.almascience.org/kb/articles/what-ms-naming-conventions-does-alma-follow>
@@ -133,6 +133,10 @@ review.
   that images generated with CASA<5.1.1 are affected by CASA imaging issues.
   How should I deal with it?”, updated 2023-11-01. Retrospective. URL:
   <https://help.almascience.org/kb/articles/i-heard-that-images-generated-with-casa-5-1-1-are-affected-by-casa-imaging-issues-how-should-i>
+- **S34 — Ephemeris imaging.** Official CASAdocs, “Ephemeris Data,” rolling
+  CASA contract read 2026-07-18. It documents `TRACKFIELD`, source-rest cube
+  handling, and the corruption risk in legacy concatenated workflows. URL:
+  <https://casadocs.readthedocs.io/en/stable/notebooks/ephemeris_data.html>
 
 ## Total Power and cross-array handling
 
@@ -149,6 +153,20 @@ review.
   **Prospective observing-side source.** Consulted only as a capability
   cross-check; not used to validate package contents. URL:
   <https://almascience.eso.org/proposing/documents-and-tools/latest/alma-technical-handbook>
+- **S35 — Historical multi-MS TP imaging defect.** ALMA Knowledgebase,
+  “I heard that TP images generated with CASA <5.7/6.1 are affected by an
+  issue with the task (t)sdimaging,” retrospective article read 2026-07-18.
+  It documents the wrong-antenna-position failure and reprocessing/workaround
+  requirements. URL:
+  <https://help.almascience.org/kb/articles/i-heard-that-tp-images-generated-with-casa-5-7-6-1-are-affected-by-an-issue-with-the-task-t-sd>
+
+## General archive-extraction safety
+
+- **S36 — Python tar extraction filters.** Python standard-library
+  documentation, rolling software contract read 2026-07-18. It documents
+  traversal, link, special-file, and extraction-filter hazards for untrusted
+  tar archives. URL:
+  <https://docs.python.org/3/library/tarfile.html#extraction-filters>
 
 ## Calibrated-MS services and legacy products (current services; volatile)
 

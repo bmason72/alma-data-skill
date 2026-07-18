@@ -29,22 +29,21 @@ MS views per EB, each with its own listobs in the weblog. The names changed at
 PL2022/Cycle 9; calibration-only recipes and manual reductions do not produce
 these target views:
 
-| MS | Era | Content |
+| MS | Era | Dataset scope |
 |---|---|---|
 | `<eb>.ms` | all pipeline eras | everything: calibrator + target scans; all SPWs incl. WVR/SQLD/CH_AVG |
-| `<eb>_target.ms` | pipeline imaging through PL2021 (sampled Cycles 5--8) | science-target view; calibrated `DATA`, continuum-subtracted `CORRECTED_DATA` |
-| `<eb>_targets.ms` | Cycle 9 / PL2022 | science targets after `hif_mstransform`; calibrated `DATA`, continuum-fit/subtracted `CORRECTED_DATA` when present |
-| `<eb>_targets_line.ms` | Cycle 9 / PL2022 | continuum-subtracted `DATA`, copied from the preceding view's corrected column |
-| `<eb>_targets.ms` | Cycle 10+ / PL2023+ | calibrated `DATA`, with successful selfcal in `CORRECTED_DATA` when present |
-| `<eb>_targets_line.ms` | Cycle 10+ / PL2023+ | continuum-subtracted `DATA`; successful selfcal result in `CORRECTED_DATA` when present |
+| `<eb>_target.ms` | pipeline imaging through PL2021 (sampled Cycles 5--8) | science-target view |
+| `<eb>_targets.ms` | PL2022+ | science-target continuum+line view after `hif_mstransform` |
+| `<eb>_targets_line.ms` | PL2022+ | science-target line view after continuum-subtraction processing |
 
 - Globbing "all listobs of a MOUS" double- or triple-counts every EB and mixes
   incompatible SPW inventories. Choose one view per question: the full MS
   for calibration/intent/time accounting, singular `_target` or plural
   `_targets` for science-SPW tabulation.
-- `listobs.txt` does not list MS columns. The column meanings above were
-  cross-checked against the sampled CASA-producing commands; verify the real
-  table with CASA `tb.colnames()` or casacore before selecting data.
+- `listobs.txt` does not list MS columns. Column meanings can differ between a
+  transient pipeline workspace, a `scriptForPI` output, and a service-supplied
+  MS. Use the conflict-aware orientation in `asdm-and-ms.md`, then inspect the
+  producing commands and real table with CASA `tb.colnames()` or casacore.
 - In sampled PL2018--PL2024 runs, SPW IDs stayed consistent across the views
   of one EB (science windows kept their full-MS numbers). Treat this as a
   convention to verify, not a guarantee: MS transformations may renumber.
@@ -87,9 +86,9 @@ Scan-table traps:
 
 ## Scan intents
 
-Grammar: `<ACTION>#<SUBSCAN_STATE>`. Vocabulary in modern interferometric
-data (observed corpus-wide across Cycle 11 12-m and 7-m deliveries; other
-modes/eras can add more):
+Grammar: `<ACTION>#<SUBSCAN_STATE>`. Common modern interferometric vocabulary
+(not exhaustive; the retained package inventory directly sampled only TM1
+data, and other modes/eras can add more):
 
 ```
 OBSERVE_TARGET#ON_SOURCE          science target
@@ -116,9 +115,10 @@ Semantics and traps:
   bucket via an explicit priority (e.g. target > bandpass/flux > phase >
   check > pointing > polarization > diffgain > atmosphere), or per-EB
   fractions will not sum to 1.
-- Intents fingerprint the processing recipe: `CALIBRATE_DIFFGAIN` ↔
-  `*_diffgain` recipes (band-to-band), `CALIBRATE_POLARIZATION` ↔
-  `hifa_polcal*` recipes.
+- `CALIBRATE_DIFFGAIN` and `CALIBRATE_POLARIZATION` identify B2B and
+  full-polarization observing modes and suggest applicable recipe families.
+  They do not prove how the data were processed; confirm the actual recipe and
+  completed stages from the PPR, weblog, and logs.
 
 ## Spectral Windows table and SPW Name grammar
 
@@ -168,12 +168,13 @@ Traps:
 
 ## Which array? Infer it
 
-listobs has no "array type" field. Antenna-name prefixes (`DV`/`DA` 12-m,
-`CM` 7-m, `PM` TP) and dish diameters are authoritative. As a fallback for
-modern interferometric data, the antenna count separates arrays cleanly:
-7-m EBs run ~8–12 antennas, 12-m ~39–50, with an empty gap between
-(threshold near 20). Remember TP EBs have ~4 `PM` antennas, and
-historical/commissioning data can violate modern counts.
+listobs has no "array type" field. Infer composition from the complete set of
+antenna-name prefixes (`DV`/`DA` 12-m, `CM` 7-m, `PM` TP) and dish diameters.
+Preserve mixed 7-m+12-m sets: solar and exceptional heterogeneous
+interferometric EBs exist. Only for an otherwise homogeneous modern EB may
+antenna count be a fallback (7-m ~8–12, 12-m ~39–50, rough threshold near
+20). TP EBs have ~4 `PM` antennas; historical/commissioning cases can violate
+modern counts.
 
 ## Cross-EB caution
 

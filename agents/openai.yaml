@@ -1,4 +1,4 @@
 interface:
   display_name: "Working with ALMA Data"
-  short_description: "Query, inspect, restore, and interpret ALMA data"
-  default_prompt: "Use $working-with-alma-data to inspect this ALMA archive query, package, or restored dataset safely."
+  short_description: "Query, download, restore, and interpret ALMA data"
+  default_prompt: "Use $working-with-alma-data to query, unpack, restore, or interpret this ALMA dataset safely."
